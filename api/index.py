@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='../templates', static_folder='../static')
 
 endpoint = "https://models.inference.ai.azure.com"
 model = "DeepSeek-R1"
@@ -21,6 +21,9 @@ if token:
     client = ChatCompletionsClient(
         endpoint=endpoint,
         credential=AzureKeyCredential(token),
+        retry_total=0,
+        connection_timeout=10,
+        read_timeout=10
     )
 
 @app.route("/")

@@ -21,9 +21,7 @@ if token:
     client = ChatCompletionsClient(
         endpoint=endpoint,
         credential=AzureKeyCredential(token),
-        retry_total=0,
-        connection_timeout=10,
-        read_timeout=10
+        retry_total=0
     )
 
 @app.route("/")

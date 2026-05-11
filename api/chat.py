@@ -8,7 +8,7 @@ load_dotenv()
 
 
 endpoint = "https://models.inference.ai.azure.com"
-model = "DeepSeek-R1"
+model = "gpt-4o-mini"
 token = os.environ["GITHUB_TOKEN"]
 
 client = ChatCompletionsClient(

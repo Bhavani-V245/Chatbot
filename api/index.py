@@ -10,7 +10,7 @@ load_dotenv()
 app = Flask(__name__, template_folder='../templates', static_folder='../static')
 
 endpoint = "https://models.inference.ai.azure.com"
-model = "DeepSeek-R1"
+model = "gpt-4o-mini"
 token = os.environ.get("GITHUB_TOKEN")
 
 if not token:

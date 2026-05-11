@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DeepSeek AI Assistant</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- Highlight.js for Code Syntax -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=4">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <button class="new-chat-btn" id="new-chat-btn">
+                    <i class="ph ph-plus"></i>
+                    <span>New chat</span>
+                </button>
+            </div>
+            <div class="sidebar-content">
+                <div class="history-label">Today</div>
+                <div class="history-list">
+                    <button class="history-item active">
+                        <i class="ph ph-chat-teardrop-text"></i>
+                        <span class="truncate">Current Conversation</span>
+                    </button>
+                </div>
+            </div>
+            <div class="sidebar-footer">
+                <button class="settings-btn">
+                    <span>User</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Chat Area -->
+        <main class="main-content">
+            <!-- Top bar -->
+            <header class="topbar">
+                <div class="model-selector">
+                    <span>DeepSeek-V3</span>
+                    <i class="ph ph-caret-down"></i>
+                </div>
+            </header>
+
+            <!-- Chat Window -->
+            <div class="chat-wrapper">
+                <div class="chat-window" id="chat-window">
+                    <div class="empty-state" id="empty-state">
+                        <div class="ai-orb">
+                            <div class="inner-orb"></div>
+                        </div>
+                        <h2>How can I help you today?</h2>
+                        <div class="recommendations">
+                            <div class="rec-card">
+                                <i class="ph ph-code"></i>
+                                <div class="rec-text">
+                                    <h4>Write a Python script</h4>
+                                    <p>to automate daily tasks</p>
+                                </div>
+                            </div>
+                            <div class="rec-card">
+                                <i class="ph ph-pencil-simple"></i>
+                                <div class="rec-text">
+                                    <h4>Draft an email</h4>
+                                    <p>requesting a meeting</p>
+                                </div>
+                            </div>
+                            <div class="rec-card">
+                                <i class="ph ph-lightbulb"></i>
+                                <div class="rec-text">
+                                    <h4>Brainstorm ideas</h4>
+                                    <p>for a new startup</p>
+                                </div>
+                            </div>
+                            <div class="rec-card">
+                                <i class="ph ph-translate"></i>
+                                <div class="rec-text">
+                                    <h4>Translate text</h4>
+                                    <p>from English to French</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="input-container">
+                <div class="input-box">
+                    <button class="icon-btn" title="Attach file">
+                        <i class="ph ph-paperclip"></i>
+                    </button>
+                    <textarea id="chat-input" placeholder="Message DeepSeek..." rows="1" autofocus></textarea>
+                    <button id="send-btn" class="send-btn disabled">
+                        <i class="ph-fill ph-arrow-up"></i>
+                    </button>
+                </div>
+                <div class="disclaimer">
+                    AI can make mistakes. Consider verifying important information.
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}?v=4"></script>
+</body>
+</html>

@@ -148,14 +148,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
             removeTypingIndicator();
 
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
+            let data;
+            try {
+                data = await response.json();
+            } catch (e) {
+                throw new Error('Failed to parse server response');
             }
-
-            const data = await response.json();
             
-            if (data.error) {
-                addMessage(`**Error:** ${data.error}`, 'bot');
+            if (!response.ok || data.error) {
+                const errMsg = data.error || 'Unknown server error';
+                addMessage(`**Error:** ${errMsg}`, 'bot');
             } else {
                 addMessage(data.response, 'bot');
                 messageHistory.push({ role: 'assistant', content: data.response });

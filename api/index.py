@@ -11,18 +11,6 @@ app = Flask(__name__, template_folder='../templates', static_folder='../static')
 
 endpoint = "https://models.inference.ai.azure.com"
 model = "gpt-4o-mini"
-token = os.environ.get("GITHUB_TOKEN")
-
-if not token:
-    print("Warning: GITHUB_TOKEN environment variable is not set.")
-
-client = None
-if token:
-    client = ChatCompletionsClient(
-        endpoint=endpoint,
-        credential=AzureKeyCredential(token),
-        retry_total=0
-    )
 
 @app.route("/")
 def index():
@@ -45,8 +33,15 @@ def chat():
             messages.append(AssistantMessage(content))
             
     try:
-        if not client:
-            return jsonify({"error": "GITHUB_TOKEN is missing or invalid. Please configure your .env file."}), 500
+        token = os.environ.get("GITHUB_TOKEN")
+        if not token:
+            return jsonify({"error": "GITHUB_TOKEN is missing or invalid. Please configure your .env file or Vercel Environment Variables."}), 500
+
+        client = ChatCompletionsClient(
+            endpoint=endpoint,
+            credential=AzureKeyCredential(token),
+            retry_total=0
+        )
 
         response = client.complete(
             messages=messages,

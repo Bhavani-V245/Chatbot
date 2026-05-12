@@ -1,4 +1,4 @@
-import os
+﻿import os
 from flask import Flask, render_template, request, jsonify
 from azure.ai.inference import ChatCompletionsClient
 from azure.ai.inference.models import (
@@ -8,7 +8,8 @@ from azure.ai.inference.models import (
 from azure.core.credentials import AzureKeyCredential
 from dotenv import load_dotenv
 
-load_dotenv()
+# override=False ensures Vercel real env vars are NOT overwritten by local .env
+load_dotenv(override=False)
 
 app = Flask(__name__, template_folder='../templates', static_folder='../static')
 
@@ -16,11 +17,8 @@ endpoint = "https://models.inference.ai.azure.com"
 model = "gpt-4o-mini"
 
 def build_user_message(content):
-    """Build a UserMessage supporting both plain text and multimodal (image + text) content."""
     if isinstance(content, str):
         return UserMessage(content)
-
-    # content is a list of {type, text} or {type, image_url: {url}}
     parts = []
     for item in content:
         if item.get("type") == "text":
@@ -33,6 +31,13 @@ def build_user_message(content):
 @app.route("/")
 def index():
     return render_template("index.html")
+
+@app.route("/check-token")
+def check_token():
+    token = os.environ.get("GITHUB_TOKEN")
+    if token:
+        return jsonify({"status": "Token Found", "token_preview": token[:10] + "..."})
+    return jsonify({"status": "Token Missing", "env_keys": [k for k in os.environ.keys()]})
 
 @app.route("/api/chat", methods=["GET", "POST"])
 def chat():
@@ -80,4 +85,3 @@ def chat():
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
-

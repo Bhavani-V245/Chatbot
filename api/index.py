@@ -16,8 +16,10 @@ model = "gpt-4o-mini"
 def index():
     return render_template("index.html")
 
-@app.route("/api/chat", methods=["POST"])
+@app.route("/api/chat", methods=["GET", "POST"])
 def chat():
+    if request.method == "GET":
+        return jsonify({"message": "Chat endpoint expects POST with JSON payload"}), 200
     data = request.json
     client_messages = data.get("messages", [])
     

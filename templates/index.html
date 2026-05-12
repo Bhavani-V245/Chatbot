@@ -104,8 +104,12 @@
 
             <!-- Input Area -->
             <div class="input-container">
+                <!-- Hidden file input -->
+                <input type="file" id="file-input" accept="image/*,.txt,.md,.py,.js,.ts,.css,.html,.json,.csv,.xml,.yaml,.yml,.sh,.cpp,.c,.java,.rs,.go" multiple style="display:none">
+                <!-- Attachment previews -->
+                <div id="attachment-preview" class="attachment-preview"></div>
                 <div class="input-box">
-                    <button class="icon-btn" title="Attach file">
+                    <button class="icon-btn" id="attach-btn" title="Attach file (image or text)">
                         <i class="ph ph-paperclip"></i>
                     </button>
                     <textarea id="chat-input" placeholder="Message DeepSeek..." rows="1" autofocus></textarea>
@@ -137,6 +141,6 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-    <script src="{{ url_for('static', filename='js/script.js') }}?v=7"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}?v=8"></script>
 </body>
 </html>

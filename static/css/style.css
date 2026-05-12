@@ -701,3 +701,98 @@ body {
     color: var(--text-primary);
 }
 
+/* ── ATTACHMENT FEATURE ─────────────────────────── */
+
+/* Paperclip button active state */
+.icon-btn.attach-active {
+    color: var(--accent-color);
+    background: rgba(255,126,179,0.15);
+}
+
+/* Preview strip */
+.attachment-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 0 4px 10px;
+    width: 100%;
+    min-height: 0;
+}
+.attachment-preview:empty { display: none; }
+
+/* Individual attachment chip */
+.attach-chip {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    max-width: 200px;
+    animation: fadeIn 0.25s ease-out;
+}
+.attach-chip img {
+    width: 36px;
+    height: 36px;
+    object-fit: cover;
+    border-radius: 6px;
+    flex-shrink: 0;
+}
+.attach-chip-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
+}
+.attach-chip i {
+    font-size: 1.2rem;
+    color: var(--accent-color);
+    flex-shrink: 0;
+}
+.attach-chip-remove {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: none;
+    background: #ff4d6d;
+    color: #fff;
+    font-size: 0.65rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    line-height: 1;
+    transition: transform 0.15s;
+}
+.attach-chip-remove:hover { transform: scale(1.15); }
+
+/* Image in chat messages */
+.message-content .msg-image {
+    max-width: 320px;
+    max-height: 240px;
+    border-radius: 10px;
+    margin: 8px 0;
+    display: block;
+    border: 1px solid var(--border-color);
+}
+.message-content .msg-file-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    background: rgba(255,255,255,0.07);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 4px 10px;
+    margin: 6px 0;
+}
+
+

@@ -3,3 +3,8 @@ azure-ai-inference==1.0.0b9
 azure-core==1.41.0
 python-dotenv==1.2.2
 gunicorn==21.2.0
+pymongo==4.6.1
+dnspython==2.6.1
+pyjwt==2.8.0
+Flask-Mail==0.10.0
+

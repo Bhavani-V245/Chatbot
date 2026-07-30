@@ -3,95 +3,139 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DeepSeek AI Assistant</title>
+    <title>Enterprise AI Assistant Platform</title>
     
-    <!-- Fonts -->
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Highlight.js for Code Syntax -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <!-- Highlight.js for Code Highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css">
     
     <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=4">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=10">
 </head>
 <body>
     <div class="app-container">
         <!-- Sidebar -->
-        <aside class="sidebar">
+        <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <button class="new-chat-btn" id="new-chat-btn">
                     <i class="ph ph-plus"></i>
                     <span>New chat</span>
                 </button>
             </div>
-            <div class="sidebar-content">
-                <div class="history-label">Today</div>
-                <div class="history-list">
-                    <button class="history-item active">
-                        <i class="ph ph-chat-teardrop-text"></i>
-                        <span class="truncate">Current Conversation</span>
-                    </button>
-                </div>
+            
+            <!-- Search conversations -->
+            <div class="sidebar-search">
+                <i class="ph ph-magnifying-glass search-icon"></i>
+                <input type="text" id="search-conv-input" placeholder="Search conversations..." class="search-input">
             </div>
+
+            <!-- Dynamic Conversation History List -->
+            <div class="sidebar-content" id="sidebar-content">
+                <div id="conversation-list"></div>
+            </div>
+
+            <!-- Sidebar Footer -->
             <div class="sidebar-footer">
-                <button class="settings-btn">
-                    <span>User</span>
+                <button class="settings-btn" id="user-profile-btn">
+                    <i class="ph ph-user-circle"></i>
+                    <span id="sidebar-user-name">Guest User</span>
+                </button>
+                <button class="icon-btn" id="sidebar-settings-btn" title="Settings">
+                    <i class="ph ph-gear"></i>
                 </button>
             </div>
         </aside>
 
         <!-- Main Chat Area -->
         <main class="main-content">
-            <!-- Top bar -->
+            <!-- Topbar -->
             <header class="topbar">
-                <div class="model-selector">
-                    <span>DeepSeek-V3</span>
-                    <i class="ph ph-caret-down"></i>
+                <div class="topbar-left">
+                    <button class="icon-btn mobile-menu-btn" id="sidebar-toggle-btn" title="Toggle Sidebar">
+                        <i class="ph ph-list"></i>
+                    </button>
+                    <!-- Model Selection Selector -->
+                    <div class="model-selector-wrapper">
+                        <select id="model-select" class="model-select">
+                            <optgroup label="GitHub Models">
+                                <option value="github:gpt-4o-mini" selected>GPT-4o Mini (GitHub)</option>
+                                <option value="github:DeepSeek-R1">DeepSeek-R1 (GitHub)</option>
+                                <option value="github:gpt-4o">GPT-4o (GitHub)</option>
+                            </optgroup>
+                            <optgroup label="Google Gemini">
+                                <option value="gemini:gemini-1.5-flash">Gemini 1.5 Flash</option>
+                                <option value="gemini:gemini-1.5-pro">Gemini 1.5 Pro</option>
+                            </optgroup>
+                            <optgroup label="Anthropic Claude">
+                                <option value="claude:claude-3-5-sonnet">Claude 3.5 Sonnet</option>
+                                <option value="claude:claude-3-opus">Claude 3 Opus</option>
+                            </optgroup>
+                        </select>
+                    </div>
                 </div>
+
                 <div class="topbar-actions">
                     <button id="voice-mode-btn" class="voice-mode-btn" title="Toggle Voice Mode">
                         <i class="ph ph-microphone"></i>
                         <span>Voice Mode</span>
                     </button>
+                    <button id="topbar-settings-btn" class="topbar-btn" title="Settings">
+                        <i class="ph ph-gear"></i>
+                    </button>
+                    <button id="auth-btn" class="auth-pill-btn">
+                        <i class="ph ph-user"></i>
+                        <span id="auth-btn-text">Sign In</span>
+                    </button>
                 </div>
             </header>
 
-            <!-- Chat Window -->
-            <div class="chat-wrapper">
+            <!-- Stop Generation Bar -->
+            <div id="stop-generation-bar" class="stop-generation-bar hidden">
+                <button id="stop-generation-btn" class="stop-btn">
+                    <i class="ph ph-square"></i> Stop Generating
+                </button>
+            </div>
+
+            <!-- Chat Scroll Wrapper -->
+            <div class="chat-wrapper" id="chat-wrapper">
                 <div class="chat-window" id="chat-window">
+                    <!-- Empty State Landing Screen -->
                     <div class="empty-state" id="empty-state">
-                        <div class="ai-orb">
-                            <div class="inner-orb"></div>
+                        <div class="center-orb-wrapper">
+                            <div class="glowing-orb"></div>
                         </div>
                         <h2>How can I help you today?</h2>
-                        <div class="recommendations">
+                        
+                        <div class="recommendations-grid">
                             <div class="rec-card">
-                                <i class="ph ph-code"></i>
+                                <div class="rec-icon"><i class="ph ph-code"></i></div>
                                 <div class="rec-text">
                                     <h4>Write a Python script</h4>
                                     <p>to automate daily tasks</p>
                                 </div>
                             </div>
                             <div class="rec-card">
-                                <i class="ph ph-pencil-simple"></i>
+                                <div class="rec-icon"><i class="ph ph-pencil-simple"></i></div>
                                 <div class="rec-text">
                                     <h4>Draft an email</h4>
                                     <p>requesting a meeting</p>
                                 </div>
                             </div>
                             <div class="rec-card">
-                                <i class="ph ph-lightbulb"></i>
+                                <div class="rec-icon"><i class="ph ph-lightbulb"></i></div>
                                 <div class="rec-text">
                                     <h4>Brainstorm ideas</h4>
                                     <p>for a new startup</p>
                                 </div>
                             </div>
                             <div class="rec-card">
-                                <i class="ph ph-translate"></i>
+                                <div class="rec-icon"><i class="ph ph-translate"></i></div>
                                 <div class="rec-text">
                                     <h4>Translate text</h4>
                                     <p>from English to French</p>
@@ -102,45 +146,226 @@
                 </div>
             </div>
 
-            <!-- Input Area -->
-            <div class="input-container">
-                <!-- Hidden file input -->
-                <input type="file" id="file-input" accept="image/*,.txt,.md,.py,.js,.ts,.css,.html,.json,.csv,.xml,.yaml,.yml,.sh,.cpp,.c,.java,.rs,.go" multiple style="display:none">
-                <!-- Attachment previews -->
-                <div id="attachment-preview" class="attachment-preview"></div>
-                <div class="input-box">
-                    <button class="icon-btn" id="attach-btn" title="Attach file (image or text)">
-                        <i class="ph ph-paperclip"></i>
-                    </button>
-                    <textarea id="chat-input" placeholder="Message DeepSeek..." rows="1" autofocus></textarea>
-                    <button id="mic-btn" class="icon-btn mic-btn" title="Speak your message">
-                        <i class="ph ph-microphone"></i>
-                    </button>
-                    <button id="send-btn" class="send-btn disabled">
-                        <i class="ph-fill ph-arrow-up"></i>
-                    </button>
+            <!-- Input Controls Area -->
+            <div class="input-area">
+                <!-- Drag and Drop Overlay -->
+                <div id="drag-overlay" class="drag-overlay hidden">
+                    <i class="ph ph-upload-simple"></i>
+                    <span>Drop files or images here to attach</span>
                 </div>
-                <!-- Voice Mode Overlay -->
-                <div id="voice-overlay" class="voice-overlay hidden">
-                    <div class="voice-orb" id="voice-orb">
-                        <div class="voice-orb-ring"></div>
-                        <i class="ph ph-microphone-slash" id="voice-orb-icon"></i>
+
+                <div class="input-container">
+                    <div id="attachment-preview" class="attachment-preview"></div>
+                    <div class="input-box-wrapper">
+                        <button class="attach-btn" id="attach-btn" title="Attach file or image">
+                            <i class="ph ph-paperclip"></i>
+                        </button>
+                        <input type="file" id="file-input" class="hidden" multiple accept="image/*,.txt,.md,.py,.js,.ts,.json,.css,.html,.csv">
+                        
+                        <textarea id="chat-input" placeholder="Message AI Assistant..." rows="1"></textarea>
+                        
+                        <button class="mic-btn" id="mic-btn" title="Voice Input">
+                            <i class="ph ph-microphone"></i>
+                        </button>
+
+                        <button id="send-btn" class="send-btn disabled" title="Send Message">
+                            <i class="ph ph-arrow-up"></i>
+                        </button>
                     </div>
-                    <p id="voice-status-text" class="voice-status-text">Tap the mic to speak</p>
-                    <p id="voice-transcript" class="voice-transcript"></p>
-                    <button id="voice-close-btn" class="voice-close-btn">Close Voice Mode</button>
                 </div>
-                <div class="disclaimer">
-                    AI can make mistakes. Consider verifying important information.
-                </div>
+                <div class="disclaimer-text">AI can make mistakes. Consider verifying important information.</div>
             </div>
         </main>
     </div>
 
-    <!-- Libraries -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-    <script src="{{ url_for('static', filename='js/script.js') }}?v=8"></script>
+    <!-- Voice Mode Fullscreen Overlay -->
+    <div id="voice-overlay" class="voice-overlay hidden">
+        <button id="voice-close-btn" class="voice-close-btn"><i class="ph ph-x"></i></button>
+        <div class="voice-content">
+            <div id="voice-orb" class="voice-orb">
+                <i id="voice-orb-icon" class="ph ph-microphone"></i>
+            </div>
+            <h3 id="voice-status-text">Listening...</h3>
+            <p id="voice-transcript" class="voice-transcript"></p>
+        </div>
+    </div>
+
+    <!-- Auth Modal (Sign In / Sign Up / Forgot Password) -->
+    <div id="auth-modal" class="modal-backdrop hidden">
+        <div class="modal-card">
+            <button class="modal-close" id="auth-modal-close"><i class="ph ph-x"></i></button>
+            <div class="auth-tabs">
+                <button id="tab-login-btn" class="auth-tab active">Log In</button>
+                <button id="tab-signup-btn" class="auth-tab">Sign Up</button>
+            </div>
+
+            <!-- Login Form -->
+            <form id="login-form" class="auth-form">
+                <h3>Welcome Back</h3>
+                <div class="input-group">
+                    <label>Email</label>
+                    <input type="email" id="login-email" placeholder="name@example.com" required>
+                </div>
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" id="login-password" placeholder="••••••••" required>
+                </div>
+                <div class="auth-extra">
+                    <a href="#" id="forgot-pw-link">Forgot Password?</a>
+                </div>
+                <div id="login-error" class="error-msg hidden"></div>
+                <button type="submit" class="primary-btn">Sign In</button>
+            </form>
+
+            <!-- Signup Form -->
+            <form id="signup-form" class="auth-form hidden">
+                <h3>Create Account</h3>
+                <div class="input-group">
+                    <label>Email</label>
+                    <input type="email" id="signup-email" placeholder="name@example.com" required>
+                </div>
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" id="signup-password" placeholder="Minimum 6 characters" required minlength="6">
+                </div>
+                <div id="signup-error" class="error-msg hidden"></div>
+                <button type="submit" class="primary-btn">Create Account</button>
+            </form>
+
+            <!-- Forgot Password OTP Form -->
+            <form id="forgot-form" class="auth-form hidden">
+                <h3>Reset Password</h3>
+                <p class="auth-subtext">Enter your registered email to receive an OTP code.</p>
+                <div class="input-group">
+                    <label>Email</label>
+                    <input type="email" id="forgot-email" placeholder="name@example.com">
+                </div>
+                <div id="otp-section" class="hidden">
+                    <div class="input-group">
+                        <label>6-Digit OTP Code</label>
+                        <input type="text" id="reset-otp" placeholder="123456" maxlength="6">
+                    </div>
+                    <div class="input-group">
+                        <label>New Password</label>
+                        <input type="password" id="reset-new-password" placeholder="New password">
+                    </div>
+                    <div class="otp-timer">
+                        <span id="otp-timer-text">Resend in 60s</span>
+                        <button type="button" id="resend-otp-btn" class="text-btn disabled">Resend Code</button>
+                    </div>
+                </div>
+                <div id="forgot-error" class="error-msg hidden"></div>
+                <div id="forgot-success" class="success-msg hidden"></div>
+                <button type="button" id="send-otp-btn" class="primary-btn">Send OTP</button>
+                <button type="button" id="verify-reset-btn" class="primary-btn hidden">Reset Password</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- User Profile Modal -->
+    <div id="profile-modal" class="modal-backdrop hidden">
+        <div class="modal-card">
+            <button class="modal-close" id="profile-modal-close"><i class="ph ph-x"></i></button>
+            <h3>User Profile</h3>
+            
+            <form id="profile-form" class="modal-form">
+                <div class="input-group">
+                    <label>Email Address</label>
+                    <input type="email" id="profile-email" disabled readonly>
+                </div>
+                <div class="input-group">
+                    <label>Display Name</label>
+                    <input type="text" id="profile-name" placeholder="John Doe">
+                </div>
+                <div class="input-group">
+                    <label>Avatar Photo URL</label>
+                    <input type="url" id="profile-photo" placeholder="https://example.com/avatar.jpg">
+                </div>
+                <button type="submit" class="primary-btn">Save Profile</button>
+                <div id="profile-msg" class="success-msg hidden"></div>
+            </form>
+
+            <hr class="divider">
+            
+            <h4>Security</h4>
+            <form id="change-pw-form" class="modal-form">
+                <div class="input-group">
+                    <label>Current Password</label>
+                    <input type="password" id="pw-current" required>
+                </div>
+                <div class="input-group">
+                    <label>New Password</label>
+                    <input type="password" id="pw-new" required minlength="6">
+                </div>
+                <button type="submit" class="secondary-btn">Change Password</button>
+                <div id="change-pw-msg" class="error-msg hidden"></div>
+            </form>
+
+            <hr class="divider">
+            <button id="logout-btn" class="danger-outline-btn"><i class="ph ph-sign-out"></i> Log Out</button>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal-backdrop hidden">
+        <div class="modal-card wide">
+            <button class="modal-close" id="settings-modal-close"><i class="ph ph-x"></i></button>
+            <h3>Settings & Preferences</h3>
+            
+            <div class="settings-grid-2col">
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <label>Theme</label>
+                    </div>
+                    <select id="setting-theme" class="select-input">
+                        <option value="system">System Default</option>
+                        <option value="dark">Dark Theme</option>
+                        <option value="light">Light Theme</option>
+                    </select>
+                </div>
+
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <label>Temperature (<span id="temp-val">0.8</span>)</label>
+                    </div>
+                    <input type="range" id="setting-temp" min="0" max="1" step="0.05" value="0.8" class="range-input">
+                </div>
+
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <label>Top-P (<span id="topp-val">0.1</span>)</label>
+                    </div>
+                    <input type="range" id="setting-topp" min="0" max="1" step="0.05" value="0.1" class="range-input">
+                </div>
+
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <label>Speech Output Voice</label>
+                    </div>
+                    <select id="setting-voice" class="select-input"></select>
+                </div>
+
+                <div class="setting-item full-width">
+                    <div class="setting-info">
+                        <label>Speech Speed (<span id="rate-val">1.0</span>x)</label>
+                    </div>
+                    <input type="range" id="setting-speech-rate" min="0.5" max="2" step="0.1" value="1.0" class="range-input">
+                </div>
+            </div>
+
+            <div class="settings-actions-stack">
+                <button id="export-chat-btn" class="modal-action-btn secondary"><i class="ph ph-download-simple"></i> Export Chat History</button>
+                <button id="clear-all-chats-btn" class="modal-action-btn pink-outline"><i class="ph ph-trash"></i> Clear All Chats</button>
+                <button id="delete-account-btn" class="modal-action-btn danger-outline"><i class="ph ph-user-minus"></i> Delete Account</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.2.12/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.1/purify.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}?v=10"></script>
 </body>
 </html>

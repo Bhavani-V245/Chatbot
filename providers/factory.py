@@ -1,6 +1,7 @@
 from .github_provider import GitHubProvider
 from .gemini_provider import GeminiProvider
 from .claude_provider import ClaudeProvider
+from .groq_provider import GroqProvider
 
 class ProviderFactory:
     """
@@ -12,7 +13,8 @@ class ProviderFactory:
         "gemini": GeminiProvider,
         "google": GeminiProvider,
         "claude": ClaudeProvider,
-        "anthropic": ClaudeProvider
+        "anthropic": ClaudeProvider,
+        "groq": GroqProvider
     }
 
     @classmethod

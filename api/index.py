@@ -115,7 +115,19 @@ def build_user_message(content):
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    load_dotenv(override=True)
+    has_groq = bool(os.environ.get("GROQ_API_KEY", "").strip())
+    has_gemini = bool(os.environ.get("GEMINI_API_KEY", "").strip())
+    has_claude = bool(os.environ.get("ANTHROPIC_API_KEY", "").strip())
+    has_github = bool(os.environ.get("GITHUB_TOKEN", "").strip())
+    
+    return render_template(
+        "index.html", 
+        has_groq=has_groq, 
+        has_gemini=has_gemini, 
+        has_claude=has_claude, 
+        has_github=has_github
+    )
 
 @app.route("/check-token")
 def check_token():
@@ -186,17 +198,21 @@ def login():
             "message": "Login successful",
             "token": token,
             "email": user["email"],
+            "display_name": user.get("display_name", user["email"].split("@")[0]),
+            "photo_url": user.get("photo_url", ""),
             "role": user.get("role", "user")
         }), 200
     except Exception as e:
         return jsonify({"error": f"Database operation failed: {str(e)}"}), 500
 
 @app.route("/api/me", methods=["GET"])
-
 @token_required
 def get_me(current_user):
+    user_email = current_user.get("email", "")
     return jsonify({
-        "email": current_user.get("email"),
+        "email": user_email,
+        "display_name": current_user.get("display_name", user_email.split("@")[0] if user_email else ""),
+        "photo_url": current_user.get("photo_url", ""),
         "role": current_user.get("role", "user")
     })
 
@@ -496,8 +512,8 @@ def chat():
 
     data = request.json or {}
     client_messages = data.get("messages", [])
-    provider_name = data.get("provider", "github")
-    model_name = data.get("model", "gpt-4o-mini")
+    provider_name = data.get("provider", "auto").lower()
+    model_name = data.get("model", "auto").lower()
     temperature = data.get("temperature", 0.8)
     top_p = data.get("top_p", 0.1)
 
@@ -507,10 +523,54 @@ def chat():
         "top_p": top_p
     }
 
-    try:
-        provider = ProviderFactory.get_provider(provider_name)
-        bot_response = provider.generate_response(client_messages, options)
+    bot_response = None
+    
+    # Priority cascade list (Provider, Model)
+    cascade_path = [
+        ("groq", "llama-3.1-8b-instant"),
+        ("gemini", "gemini-3.6-flash"),
+        ("claude", "claude-3-5-sonnet"),
+        ("github", "gpt-4o-mini")
+    ]
+    
+    # If a specific provider was requested, try that one first.
+    # If it fails, we fall back to the cascade path starting from the top.
+    providers_to_try = []
+    if provider_name != "auto" and provider_name != "":
+        providers_to_try.append((provider_name, model_name))
+    
+    # Add all cascade providers to the try list
+    for p_name, m_name in cascade_path:
+        if (p_name, m_name) not in providers_to_try:
+            providers_to_try.append((p_name, m_name))
+            
+    success = False
+    
+    for p_name, m_name in providers_to_try:
+        try:
+            provider = ProviderFactory.get_provider(p_name)
+            current_options = dict(options)
+            current_options["model_name"] = m_name
+            
+            bot_response = provider.generate_response(client_messages, current_options)
+            
+            # If the provider explicitly returns an error string (e.g. from old fallback logic), treat as failure
+            if bot_response and bot_response.startswith("⚠️"):
+                print(f"Backend Warning: Provider {p_name} returned error: {bot_response}")
+                continue
+                
+            if bot_response:
+                success = True
+                break
+        except Exception as e:
+            # Silently log and continue to the next provider
+            print(f"Backend Warning: Provider {p_name} failed with error: {str(e)}")
+            continue
 
+    if not success or not bot_response:
+        bot_response = "The AI service is temporarily unavailable. Please try again in a few moments."
+
+    try:
         # Save conversation log to MongoDB if connected
         if history_collection is not None:
             auth_header = request.headers.get("Authorization", "")

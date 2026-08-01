@@ -43,7 +43,10 @@
             <!-- Sidebar Footer -->
             <div class="sidebar-footer">
                 <button class="settings-btn" id="user-profile-btn">
-                    <i class="ph ph-user-circle"></i>
+                    <div class="sidebar-avatar-container" id="sidebar-avatar-container">
+                        <i class="ph ph-user-circle" id="sidebar-default-icon"></i>
+                        <img id="sidebar-avatar-img" class="sidebar-avatar-img hidden" alt="Avatar">
+                    </div>
                     <span id="sidebar-user-name">Guest User</span>
                 </button>
                 <button class="icon-btn" id="sidebar-settings-btn" title="Settings">
@@ -63,19 +66,35 @@
                     <!-- Model Selection Selector -->
                     <div class="model-selector-wrapper">
                         <select id="model-select" class="model-select">
-                            <optgroup label="GitHub Models">
-                                <option value="github:gpt-4o-mini" selected>GPT-4o Mini (GitHub)</option>
-                                <option value="github:DeepSeek-R1">DeepSeek-R1 (GitHub)</option>
-                                <option value="github:gpt-4o">GPT-4o (GitHub)</option>
+                            <optgroup label="Auto Mode">
+                                <option value="auto:auto" selected>Auto (Recommended)</option>
                             </optgroup>
+                            {% if has_gemini %}
                             <optgroup label="Google Gemini">
-                                <option value="gemini:gemini-1.5-flash">Gemini 1.5 Flash</option>
-                                <option value="gemini:gemini-1.5-pro">Gemini 1.5 Pro</option>
+                                <option value="gemini:gemini-3.6-flash">Gemini 3.6 Flash</option>
+                                <option value="gemini:gemini-3.1-pro-preview">Gemini 3.1 Pro (Preview)</option>
                             </optgroup>
+                            {% endif %}
+                            {% if has_claude %}
                             <optgroup label="Anthropic Claude">
                                 <option value="claude:claude-3-5-sonnet">Claude 3.5 Sonnet</option>
                                 <option value="claude:claude-3-opus">Claude 3 Opus</option>
                             </optgroup>
+                            {% endif %}
+                            {% if has_groq %}
+                            <optgroup label="Groq (Fast & Free)">
+                                <option value="groq:llama-3.1-8b-instant">Llama 3.1 8B (Instant)</option>
+                                <option value="groq:llama-3.1-70b-versatile">Llama 3.1 70B (Versatile)</option>
+                                <option value="groq:mixtral-8x7b-32768">Mixtral 8x7B</option>
+                            </optgroup>
+                            {% endif %}
+                            {% if has_github %}
+                            <optgroup label="GitHub Models">
+                                <option value="github:gpt-4o-mini">GPT-4o Mini (GitHub)</option>
+                                <option value="github:DeepSeek-R1">DeepSeek-R1 (GitHub)</option>
+                                <option value="github:gpt-4o">GPT-4o (GitHub)</option>
+                            </optgroup>
+                            {% endif %}
                         </select>
                     </div>
                 </div>
@@ -269,6 +288,25 @@
             <h3>User Profile</h3>
             
             <form id="profile-form" class="modal-form">
+                <div class="avatar-upload-section">
+                    <div class="avatar-preview-box" id="avatar-preview-box">
+                        <i class="ph ph-user" id="avatar-default-icon"></i>
+                        <img id="avatar-preview-img" class="avatar-preview-img hidden" alt="Profile Picture">
+                    </div>
+                    <div class="avatar-upload-info">
+                        <div class="avatar-actions">
+                            <button type="button" class="avatar-upload-btn" id="choose-avatar-btn">
+                                <i class="ph ph-upload-simple"></i> Choose Image
+                            </button>
+                            <button type="button" class="avatar-remove-btn hidden" id="remove-avatar-btn" title="Remove Photo">
+                                <i class="ph ph-trash"></i>
+                            </button>
+                        </div>
+                        <input type="file" id="avatar-file-input" class="hidden" accept="image/*">
+                        <span class="avatar-hint">Supports PNG, JPG, WEBP</span>
+                    </div>
+                </div>
+
                 <div class="input-group">
                     <label>Email Address</label>
                     <input type="email" id="profile-email" disabled readonly>
@@ -276,10 +314,6 @@
                 <div class="input-group">
                     <label>Display Name</label>
                     <input type="text" id="profile-name" placeholder="John Doe">
-                </div>
-                <div class="input-group">
-                    <label>Avatar Photo URL</label>
-                    <input type="url" id="profile-photo" placeholder="https://example.com/avatar.jpg">
                 </div>
                 <button type="submit" class="primary-btn">Save Profile</button>
                 <div id="profile-msg" class="success-msg hidden"></div>
@@ -297,12 +331,12 @@
                     <label>New Password</label>
                     <input type="password" id="pw-new" required minlength="6">
                 </div>
-                <button type="submit" class="secondary-btn">Change Password</button>
+                <button type="submit" class="modal-action-btn secondary">Change Password</button>
                 <div id="change-pw-msg" class="error-msg hidden"></div>
             </form>
 
             <hr class="divider">
-            <button id="logout-btn" class="danger-outline-btn"><i class="ph ph-sign-out"></i> Log Out</button>
+            <button id="logout-btn" class="modal-action-btn danger-outline"><i class="ph ph-sign-out"></i> Log Out</button>
         </div>
     </div>
 

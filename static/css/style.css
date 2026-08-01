@@ -571,6 +571,112 @@ body {
     cursor: pointer;
 }
 
+/* Avatar Upload Section */
+.avatar-upload-section {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+    padding: 12px;
+    background-color: var(--bg-dark-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+}
+
+.avatar-preview-box {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background-color: var(--bg-dark-input);
+    border: 2px solid var(--accent-pink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+    font-size: 2rem;
+    color: var(--text-secondary);
+    position: relative;
+}
+
+.avatar-preview-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.avatar-upload-info {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.avatar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.avatar-remove-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: transparent;
+    border: 1px solid #ef4444;
+    color: #ef4444;
+    padding: 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.avatar-remove-btn:hover {
+    background-color: rgba(239, 68, 68, 0.1);
+}
+
+.avatar-upload-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: #2e2858;
+    border: 1px solid var(--border-color);
+    color: #ffffff;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.avatar-upload-btn:hover {
+    background-color: #38316c;
+}
+
+.avatar-hint {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.sidebar-avatar-container {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.sidebar-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
 /* Auth Tabs */
 .auth-tabs {
     display: flex;

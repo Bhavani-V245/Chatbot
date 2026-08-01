@@ -53,7 +53,7 @@ class GitHubProvider(BaseAIProvider):
         load_dotenv(override=True)
         token = os.environ.get("GITHUB_TOKEN", "").strip()
         if not token:
-            return "GITHUB_TOKEN is missing or invalid. Please check your .env file."
+            raise Exception("GITHUB_TOKEN is missing or invalid. Please check your .env file.")
 
         client = ChatCompletionsClient(
             endpoint=self.endpoint,
@@ -83,16 +83,11 @@ class GitHubProvider(BaseAIProvider):
                 model=target_model
             )
             return response.choices[0].message.content
-        except Exception:
-            # If specified model is unknown or fails, safely complete with gpt-4o-mini
-            try:
-                response = client.complete(
-                    messages=formatted_messages,
-                    temperature=temperature,
-                    top_p=top_p,
-                    max_tokens=2048,
-                    model="gpt-4o-mini"
-                )
-                return response.choices[0].message.content
-            except Exception as inner_e:
-                return f"Unable to generate AI response: {str(inner_e)}"
+        except Exception as e:
+            err_str = str(e).lower()
+            if "unauthorized" in err_str or "401" in err_str:
+                raise Exception("Authentication Error: The API token is invalid or expired.")
+            elif "rate_limit" in err_str or "429" in err_str:
+                raise Exception("Rate Limit Exceeded: You have reached the API limit.")
+            else:
+                raise Exception(f"GitHub Models API Error: {str(e)}")

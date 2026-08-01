@@ -16,11 +16,14 @@ class GeminiProvider(BaseAIProvider):
     """
 
     MODEL_MAP = {
-        "gemini-2.5-flash": "gemini-1.5-flash",
-        "gemini-2.5-pro": "gemini-1.5-pro",
-        "gemini-1.5-flash": "gemini-1.5-flash",
-        "gemini-1.5-pro": "gemini-1.5-pro",
-        "gemini-2.0-flash": "gemini-2.0-flash-exp"
+        "gemini-1.5-flash": "gemini-3.5-flash",
+        "gemini-1.5-pro": "gemini-2.5-pro",
+        "gemini-2.0-flash": "gemini-3.5-flash",
+        "gemini-2.5-flash": "gemini-2.5-flash",
+        "gemini-2.5-pro": "gemini-2.5-pro",
+        "gemini-3.1-pro-preview": "gemini-3.1-pro-preview",
+        "gemini-3.5-flash": "gemini-3.5-flash",
+        "gemini-3.6-flash": "gemini-3.6-flash",
     }
 
     def generate_response(self, messages: list, options: dict = None) -> str:
@@ -33,7 +36,7 @@ class GeminiProvider(BaseAIProvider):
         api_key = os.environ.get("GEMINI_API_KEY", "").strip()
 
         if not api_key:
-            return self._execute_fallback(messages, options)
+            raise Exception("GEMINI_API_KEY is missing from .env file")
 
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{target_model}:generateContent?key={api_key}"
 
@@ -87,12 +90,16 @@ class GeminiProvider(BaseAIProvider):
                     if parts and parts[0].get("text"):
                         return parts[0].get("text", "")
             
-            return self._execute_fallback(messages, options)
-        except Exception:
-            return self._execute_fallback(messages, options)
-
-    def _execute_fallback(self, messages: list, options: dict) -> str:
-        fallback_options = dict(options or {})
-        fallback_options["model_name"] = "gpt-4o-mini"
-        github_fallback = GitHubProvider()
-        return github_fallback.generate_response(messages, fallback_options)
+            raise Exception("Unknown Gemini response format")
+        except urllib.error.HTTPError as e:
+            reason = "Unknown Error"
+            if e.code == 429:
+                reason = "Quota Exceeded / Rate Limit"
+            elif e.code in [401, 403]:
+                reason = "Invalid API Key"
+            elif e.code == 404:
+                reason = f"Model {target_model} not found"
+                
+            raise Exception(f"Gemini API Error ({e.code} - {reason})")
+        except Exception as e:
+            raise Exception(f"Connection error: {str(e)}")

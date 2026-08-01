@@ -114,6 +114,8 @@ def build_user_message(content):
     return UserMessage(content=parts)
 
 @app.route("/")
+@app.route("/api/index")
+@app.route("/api/index.py")
 def index():
     load_dotenv(override=True)
     has_groq = bool(os.environ.get("GROQ_API_KEY", "").strip())

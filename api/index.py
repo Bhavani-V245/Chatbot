@@ -15,11 +15,14 @@ from flask import Flask, render_template, request, jsonify
 from flask_mail import Mail, Message
 
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 from pymongo import MongoClient
 from bson import ObjectId
 from providers.factory import ProviderFactory
-
-
+from services.file_parser import FileParser
+from services.image_service import ImageService
+from services.memory_service import MemoryService
+from flask import send_from_directory
 
 from azure.ai.inference import ChatCompletionsClient
 from azure.ai.inference.models import (
@@ -504,9 +507,46 @@ def export_data(current_user):
     }), 200
 
 
+# --- File Serving Endpoint ---
+@app.route("/storage/generated_images/<filename>")
+def serve_generated_image(filename):
+    save_dir = os.path.join(project_root, "storage", "generated_images")
+    return send_from_directory(save_dir, filename)
+
+# --- File Upload & Parsing Endpoint ---
+@app.route("/api/upload", methods=["POST"])
+@token_required
+def upload_file(current_user):
+    if 'file' not in request.files:
+        return jsonify({"error": "No file part"}), 400
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"error": "No selected file"}), 400
+
+    filename = secure_filename(file.filename)
+    
+    # Determine save path based on extension
+    ext = os.path.splitext(filename)[1].lower()
+    if ext in ['.png', '.jpg', '.jpeg', '.gif', '.webp']:
+        save_dir = os.path.join(project_root, "storage", "uploads", "images")
+    else:
+        save_dir = os.path.join(project_root, "storage", "uploads", "documents")
+        
+    os.makedirs(save_dir, exist_ok=True)
+    file_path = os.path.join(save_dir, filename)
+    file.save(file_path)
+    
+    # Parse file content
+    extracted_text = FileParser.parse_file(file_path, filename)
+    
+    return jsonify({
+        "message": "File uploaded and parsed successfully",
+        "filename": filename,
+        "path": file_path,
+        "extracted_text": extracted_text
+    }), 200
+
 # --- Protected Chat Endpoint ---
-
-
 @app.route("/api/chat", methods=["GET", "POST"])
 def chat():
     if request.method == "GET":
@@ -518,12 +558,87 @@ def chat():
     model_name = data.get("model", "auto").lower()
     temperature = data.get("temperature", 0.8)
     top_p = data.get("top_p", 0.1)
+    is_temporary = data.get("temporary", False)
 
     options = {
         "model_name": model_name,
         "temperature": temperature,
         "top_p": top_p
     }
+
+    # Auth checks
+    auth_header = request.headers.get("Authorization", "")
+    user_email = "anonymous"
+    if auth_header.startswith("Bearer "):
+        try:
+            tok = auth_header.split(" ")[1]
+            decoded = jwt.decode(tok, os.environ.get("JWT_SECRET", "fallback_secret_key"), algorithms=["HS256"])
+            user_email = decoded.get("email", "anonymous")
+        except Exception:
+            pass
+
+    memory_service = MemoryService(db)
+
+    # 1. Memory Intent Detection
+    if client_messages and not is_temporary:
+        last_message = client_messages[-1].get("content", "")
+        memory_response = memory_service.process_memory_intent(user_email, last_message)
+        if memory_response:
+            return jsonify({"response": memory_response})
+            
+    # 2. Inject Persistent Memory into Context
+    if not is_temporary and client_messages:
+        memory_context = memory_service.get_memory_context(user_email)
+        if memory_context:
+            # Prepend a system message or add to the first message
+            if client_messages[0]["role"] == "system":
+                client_messages[0]["content"] += f"\n\n{memory_context}"
+            else:
+                client_messages.insert(0, {"role": "system", "content": memory_context})
+
+    # Image Generation Intent Detection
+    if client_messages:
+        last_message = client_messages[-1].get("content", "").strip().lower()
+        is_image_intent = False
+        
+        # Verb + Noun logic
+        words = last_message.split()
+        if words:
+            first_word = words[0]
+            # Include common typos like generaet
+            triggers = ["generate", "draw", "create", "make", "generaet"]
+            nouns = ["image", "picture", "photo", "logo", "poster", "illustration", "wallpaper", "avatar", "art", "drawing"]
+            
+            if first_word in triggers and any(noun in last_message for noun in nouns):
+                is_image_intent = True
+            
+            # Explicit overrides
+            if last_message.startswith("draw ") or last_message.startswith("illustration of"):
+                is_image_intent = True
+        if is_image_intent:
+            try:
+                img_service = ImageService()
+                img_metadata = img_service.generate(client_messages[-1].get("content", ""), project_root)
+                
+                # Store metadata in MongoDB
+                if history_collection is not None:
+                    auth_header = request.headers.get("Authorization", "")
+                    user_email = "anonymous"
+                    if auth_header.startswith("Bearer "):
+                        try:
+                            tok = auth_header.split(" ")[1]
+                            decoded = jwt.decode(tok, os.environ.get("JWT_SECRET", "fallback_secret_key"), algorithms=["HS256"])
+                            user_email = decoded.get("email", "anonymous")
+                        except Exception:
+                            pass
+                    img_metadata["user_email"] = user_email
+                    # Use a separate collection for images, or just store in history with type=image
+                    db.generated_images.insert_one(img_metadata)
+                
+                markdown_response = f"Here is your generated image:\n\n![{img_metadata['prompt']}]({img_metadata['path']})"
+                return jsonify({"response": markdown_response})
+            except Exception as e:
+                return jsonify({"response": f"⚠️ Failed to generate image: {str(e)}"}), 500
 
     bot_response = None
     
@@ -573,18 +688,8 @@ def chat():
         bot_response = "The AI service is temporarily unavailable. Please try again in a few moments."
 
     try:
-        # Save conversation log to MongoDB if connected
-        if history_collection is not None:
-            auth_header = request.headers.get("Authorization", "")
-            user_email = "anonymous"
-            if auth_header.startswith("Bearer "):
-                try:
-                    tok = auth_header.split(" ")[1]
-                    decoded = jwt.decode(tok, os.environ.get("JWT_SECRET", "fallback_secret_key"), algorithms=["HS256"])
-                    user_email = decoded.get("email", "anonymous")
-                except Exception:
-                    pass
-
+        # Save conversation log to MongoDB if connected and not temporary
+        if history_collection is not None and not is_temporary:
             history_collection.insert_one({
                 "user_email": user_email,
                 "provider": provider_name,

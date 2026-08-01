@@ -4,6 +4,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let currentUser = null;
     let currentConversationId = null;
     let messageHistory = [];
+    let isTemporaryChat = false;
     let pendingAttachments = []; // [{type, name, dataUrl, text}]
     let abortController = null;
     let otpTimerInterval = null;
@@ -44,9 +45,44 @@ document.addEventListener("DOMContentLoaded", () => {
     const stopGenerationBar = document.getElementById("stop-generation-bar");
     const stopGenerationBtn = document.getElementById("stop-generation-btn");
 
+    // Mobile Sidebar Toggle
+    if (sidebarToggleBtn && sidebar) {
+        sidebarToggleBtn.addEventListener("click", () => {
+            sidebar.classList.toggle("active");
+        });
+        
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener("click", (e) => {
+            if (window.innerWidth <= 768 && sidebar.classList.contains("active")) {
+                if (!sidebar.contains(e.target) && !sidebarToggleBtn.contains(e.target)) {
+                    sidebar.classList.remove("active");
+                }
+            }
+        });
+    }
+
     // Auth Modal
     const authBtn = document.getElementById("auth-btn");
     const authBtnText = document.getElementById("auth-btn-text");
+    
+    // Temporary Chat
+    const tempChatBtn = document.getElementById("temp-chat-btn");
+    if (tempChatBtn) {
+        tempChatBtn.addEventListener("click", () => {
+            isTemporaryChat = !isTemporaryChat;
+            if (isTemporaryChat) {
+                tempChatBtn.style.backgroundColor = "var(--accent-pink)";
+                tempChatBtn.style.color = "#fff";
+                chatWindow.innerHTML = `<div class="empty-state" id="empty-state"><div class="empty-icon"><i class="ph ph-ghost"></i></div><h2>Temporary Chat Activated</h2><p>This conversation will not be saved to your history or persistent memory.</p></div>`;
+                messageHistory = [];
+                currentConversationId = null;
+            } else {
+                tempChatBtn.style.backgroundColor = "transparent";
+                tempChatBtn.style.color = "var(--text-color)";
+                startNewChat();
+            }
+        });
+    }
     const authModal = document.getElementById("auth-modal");
     const authModalClose = document.getElementById("auth-modal-close");
     const tabLoginBtn = document.getElementById("tab-login-btn");
@@ -920,7 +956,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (SpeechRecognition) {
         recognition = new SpeechRecognition();
-        recognition.continuous = false;
+        recognition.continuous = true; // Changed to true for continuous listening
         recognition.interimResults = true;
         recognition.lang = "en-US";
 
@@ -950,13 +986,44 @@ document.addEventListener("DOMContentLoaded", () => {
             }
             if (final && voiceModeActive) {
                 voiceStatusText.textContent = "Processing...";
+                // Pause recognition while processing
+                recognition.stop();
                 sendVoiceMessage(final.trim());
             }
         };
 
         recognition.onend = () => {
+            if (voiceModeActive && isListening && !voiceStatusText.textContent.startsWith("Processing")) {
+                // Auto restart if it stopped unexpectedly while active (e.g. timeout on continuous)
+                try {
+                    recognition.start();
+                    return;
+                } catch(e) {}
+            }
             isListening = false;
             micBtn.classList.remove("listening");
+            if (voiceModeActive && voiceOrbIcon.className === "ph ph-microphone") {
+                voiceOrbIcon.className = "ph ph-microphone-slash";
+                if (!voiceStatusText.textContent.startsWith("Error")) {
+                    voiceStatusText.textContent = "Tap to resume listening";
+                }
+            }
+        };
+
+        recognition.onerror = (event) => {
+            isListening = false;
+            micBtn.classList.remove("listening");
+            if (voiceModeActive) {
+                voiceOrbIcon.className = "ph ph-warning";
+                
+                let errorMsg = event.error;
+                if (event.error === 'not-allowed') errorMsg = "Microphone blocked (Permission Denied)";
+                else if (event.error === 'no-speech') errorMsg = "No speech detected";
+                else if (event.error === 'network') errorMsg = "Network connection failed";
+                else if (event.error === 'aborted') errorMsg = "Listening aborted";
+                
+                voiceStatusText.textContent = `Error: ${errorMsg}`;
+            }
         };
     }
 
@@ -977,12 +1044,33 @@ document.addEventListener("DOMContentLoaded", () => {
         window.speechSynthesis.onvoiceschanged = updateVoiceList;
     }
 
+    let currentSpokenText = "";
+    
     function speakText(text) {
         if (!window.speechSynthesis) return;
+        
+        // Find all speak buttons and reset them
+        const allSpeakBtns = document.querySelectorAll('.action-btn i.ph-stop-circle');
+        allSpeakBtns.forEach(icon => {
+            icon.className = "ph ph-speaker-high";
+        });
+        
+        // Find the specific button for this text (hacky but works for UI state)
+        const btnElement = event && event.currentTarget ? event.currentTarget.querySelector('i') : null;
+        
+        if (window.speechSynthesis.speaking) {
+            window.speechSynthesis.cancel();
+            if (currentSpokenText === text) {
+                currentSpokenText = "";
+                return; // Stop and exit if it's the same text
+            }
+        }
+        
+        currentSpokenText = text;
         const cleaned = text
             .replace(/```[\s\S]*?```/g, "code block omitted.")
             .replace(/[*_#>\[\]]/g, "").trim();
-        window.speechSynthesis.cancel();
+            
         const utterance = new SpeechSynthesisUtterance(cleaned);
         utterance.rate = parseFloat(settingSpeechRate.value || 1.0);
         
@@ -990,10 +1078,28 @@ document.addEventListener("DOMContentLoaded", () => {
         const selIdx = parseInt(settingVoice.value);
         if (!isNaN(selIdx) && voices[selIdx]) utterance.voice = voices[selIdx];
 
+        utterance.onend = () => {
+            if (currentSpokenText === text) currentSpokenText = "";
+            if (btnElement) btnElement.className = "ph ph-speaker-high";
+            
+            // Auto-resume Voice Mode listening after bot finishes speaking
+            if (voiceModeActive && recognition) {
+                voiceStatusText.textContent = "Listening... speak now";
+                try {
+                    recognition.start();
+                } catch(e) {}
+            }
+        };
+        
+        if (btnElement) btnElement.className = "ph ph-stop-circle";
         window.speechSynthesis.speak(utterance);
     }
 
     voiceModeBtn.addEventListener("click", () => {
+        if (!recognition) {
+            alert("Your browser does not support Voice Mode. Please use Chrome, Edge, or Safari.");
+            return;
+        }
         voiceModeActive = true;
         voiceOverlay.classList.remove("hidden");
         voiceStatusText.textContent = "Tap the orb to speak";
@@ -1009,12 +1115,22 @@ document.addEventListener("DOMContentLoaded", () => {
             if (recognition) recognition.stop();
         } else {
             window.speechSynthesis && window.speechSynthesis.cancel();
-            if (recognition) recognition.start();
+            if (recognition) {
+                try {
+                    recognition.start();
+                } catch(e) {
+                    console.error("SpeechRecognition start error:", e);
+                    voiceStatusText.textContent = "Error: " + e.message;
+                }
+            }
         }
     });
 
     micBtn.addEventListener("click", () => {
-        if (!recognition) return;
+        if (!recognition) {
+            alert("Your browser does not support Speech Recognition. Please use Chrome, Edge, or Safari.");
+            return;
+        }
         if (isListening) recognition.stop(); else recognition.start();
     });
 
@@ -1140,6 +1256,21 @@ document.addEventListener("DOMContentLoaded", () => {
                 p.innerText = content;
                 msgContent.appendChild(p);
             }
+            
+            // Add user message actions
+            const userActions = document.createElement("div");
+            userActions.className = "msg-actions user-actions";
+            userActions.style.justifyContent = "flex-end";
+            
+            const editBtn = document.createElement("button");
+            editBtn.className = "action-btn";
+            editBtn.innerHTML = '<i class="ph ph-pencil-simple"></i> Edit';
+            editBtn.addEventListener("click", () => {
+                chatInput.value = content;
+                chatInput.focus();
+            });
+            userActions.appendChild(editBtn);
+            msgContent.appendChild(userActions);
         }
 
         msgContainer.appendChild(msgContent);
@@ -1204,7 +1335,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     provider: selProvider,
                     model: selModel,
                     temperature: temperature,
-                    top_p: top_p
+                    top_p: top_p,
+                    temporary: typeof isTemporaryChat !== 'undefined' ? isTemporaryChat : false
                 }),
                 signal: abortController.signal
             });
@@ -1219,16 +1351,17 @@ document.addEventListener("DOMContentLoaded", () => {
                 addMessageUI(data.response, "bot");
                 messageHistory.push({ role: "assistant", content: data.response });
 
-                // Sync with conversation history session if logged in
-                if (jwtToken) syncConversationSession();
+                // Sync with conversation history session if logged in and not temporary
+                if (jwtToken && !(typeof isTemporaryChat !== 'undefined' && isTemporaryChat)) syncConversationSession();
             }
         } catch(error) {
+            console.error("Chat Error:", error);
             removeTypingIndicator();
             stopGenerationBar.classList.add("hidden");
             if (error.name === "AbortError") {
                 addMessageUI("*Generation stopped by user.*", "bot");
             } else {
-                addMessageUI("**Error:** Encounted issue connecting to server.", "bot");
+                addMessageUI("**Error:** " + error.message, "bot");
             }
         }
     }

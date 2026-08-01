@@ -22,10 +22,13 @@
     <div class="app-container">
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <button class="new-chat-btn" id="new-chat-btn">
+            <div class="sidebar-header" style="display: flex; gap: 8px;">
+                <button class="new-chat-btn" id="new-chat-btn" style="flex: 1;">
                     <i class="ph ph-plus"></i>
                     <span>New chat</span>
+                </button>
+                <button class="icon-btn" id="temp-chat-btn" title="Toggle Temporary Chat" style="border: 1px solid var(--border-color);">
+                    <i class="ph ph-ghost"></i>
                 </button>
             </div>
             
@@ -400,6 +403,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.1/purify.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
 
-    <script src="{{ url_for('static', filename='js/script.js') }}?v=10"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}?v=11"></script>
 </body>
 </html>

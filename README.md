@@ -1,4 +1,4 @@
-# DeepSeek AI Assistant
+# AI Assistant
 
 A beautifully designed, premium full-screen conversational AI web application. This project uses a Flask backend to connect to the **GitHub Models Inference API**, natively powering the chat experience with the `DeepSeek-R1` model.
 

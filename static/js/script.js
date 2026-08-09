@@ -1409,12 +1409,21 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!text) return;
         addMessageUI(text, "user");
         messageHistory.push({ role: "user", content: text });
-        sendMessagePayload().then(() => {
+        
+        try {
+            await sendMessagePayload();
             const lastMsg = messageHistory[messageHistory.length - 1];
             if (lastMsg && lastMsg.role === "assistant") {
                 speakText(lastMsg.content);
+            } else if (voiceModeActive) {
+                // If it failed and no assistant message was added
+                speakText("I'm sorry, I encountered an error processing your request.");
             }
-        });
+        } catch (e) {
+            if (voiceModeActive) {
+                speakText("I'm sorry, there was a network error.");
+            }
+        }
     }
 
     stopGenerationBtn.addEventListener("click", () => {

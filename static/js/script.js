@@ -1100,6 +1100,14 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("Your browser does not support Voice Mode. Please use Chrome, Edge, or Safari.");
             return;
         }
+        
+        // Unlock speech synthesis on mobile by speaking an empty string directly on user interaction
+        if (window.speechSynthesis) {
+            const unlockUtterance = new SpeechSynthesisUtterance("");
+            unlockUtterance.volume = 0;
+            window.speechSynthesis.speak(unlockUtterance);
+        }
+
         voiceModeActive = true;
         voiceOverlay.classList.remove("hidden");
         voiceStatusText.textContent = "Tap the orb to speak";
@@ -1111,6 +1119,13 @@ document.addEventListener("DOMContentLoaded", () => {
         window.speechSynthesis && window.speechSynthesis.cancel();
     });
     voiceOrb.addEventListener("click", () => {
+        // Double unlock for safety if they tapped orb
+        if (window.speechSynthesis) {
+            const unlockUtterance = new SpeechSynthesisUtterance("");
+            unlockUtterance.volume = 0;
+            window.speechSynthesis.speak(unlockUtterance);
+        }
+
         if (isListening) {
             if (recognition) recognition.stop();
         } else {
